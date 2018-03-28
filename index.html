@@ -1,134 +1,103 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<style> /* set the CSS */
+<html>
+<head>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<link rel="stylesheet" href="baja_practive.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
 
-body { font: 12px Arial;}
-
-path {
-    stroke: steelblue;
-    stroke-width: 2;
-    fill: none;
-}
-
-.axis path,
-.axis line {
-    fill: none;
-    stroke: grey;
-    stroke-width: 1;
-    shape-rendering: crispEdges;
-}
-
-.legend {
-    font-size: 16px;
-    font-weight: bold;
-    text-anchor: middle;
-}
-
-</style>
 <body>
+ <div id="joesdiv" style ="height: = 1000px"> </div>
+ <script type="text/javascript">
 
-<!-- load the d3.js library -->
-<script src="http://d3js.org/d3.v3.min.js"></script>
+ var data = [{year: 2006, books: 295.5},
+           {year: 2007, books: 282.67},
+           {year: 2008, books: 295.5},
+           {year: 2009, books: 300},
+           {year: 2010, books: 333}];
+
+var barWidth = 40;
+var width = (barWidth + 10) * data.length;
+var height = 200;
+
+var x = d3.scaleLinear().domain([0, data.length]).range([0, width]);
+var y = d3.scaleLinear().domain([0, d3.max(data, function(datum) { return datum.books; })]).
+ rangeRound([0, height]);
+
+// add the canvas to the DOM
+var barDemo = d3.select("#joesdiv").
+ append("svg:svg").
+ attr("width", width).
+ attr("height", height);
+
+barDemo.selectAll("rect").
+ data(data).
+ enter().
+ append("svg:rect").
+ attr("x", function(datum, index) { return x(index); }).
+ attr("y", function(datum) { return height - y(datum.books); }).
+ attr("height", function(datum) { return y(datum.books); }).
+ attr("transform", "translate(0,-10)").
+ attr("width", barWidth).
+ attr("fill", "#2d578b").
+ attr("padding-bottom");
+
+ barDemo.selectAll("text").
+ data(data).
+ enter().
+ append("svg:text").
+ attr("x", function(datum, index) { return x(index) + barWidth; }).
+ attr("y", function(datum) { return height - y(datum.books); }).
+ attr("dx", -barWidth/2).
+ attr("dy", "1.2em").
+ attr("transform", "translate(0,-10)").
+ attr("text-anchor", "middle").
+ text(function(datum) { return datum.books;}).
+ attr("fill", "white");
+
+ barDemo.selectAll("text.yAxis").
+ data(data).
+ enter().append("svg:text").
+ attr("x", function(datum, index) { return x(index) + barWidth; }).
+ attr("y", height).
+ attr("dx", -barWidth/2).
+ attr("text-anchor", "middle").
+ attr("style", "font-size: 12; font-family: Helvetica, sans-serif").
+ text(function(datum) { return datum.year;}).
+ attr("transform", "translate(0, 0)").
+ attr("class", "yAxis");
+ </script>
+
+
+<i class="fa fa-cog fa-spin"></i>
+<span class="fa-stack fa-lg">
+<i class="fa fa-camera fa-stack-1x fa-inverse"></i>
+<i class="fa fa-ban fa-stack-2x"></i>
+</span>
+<h1> <a href="https://baja.mae.cornell.edu/index.html">Go to the Cornell Baja Website!</a>
+</h1>
+<p class="error" onclick="changeText(this)">Click Here To Join Baja!</p>
+
+<script>
+function changeText(id) {
+   id.innerHTML = "Rejected!";
+}
+</script>
+<p>Click the button to make 10 Million Dollars!</p>
+
+<button onclick="changeText(this)">Win Now!</button>
 
 <script>
 
-// Set the dimensions of the canvas / graph
-var margin = {top: 30, right: 230, bottom: 70, left: 50},
-    width = 800 - margin.left - margin.right,
-    height = 300 - margin.top - margin.bottom;
-
-// Parse the date / time
-var parseDate = d3.time.format("%L").parse;
-
-// Set the ranges
-var x = d3.time.scale().range([0, width]);
-var y = d3.scale.linear().range([height, 0]);
-
-// Define the axes
-var xAxis = d3.svg.axis().scale(x)
-    .orient("bottom").ticks(5);
-
-var yAxis = d3.svg.axis().scale(y)
-    .orient("left").ticks(5);
-
-// Define the line
-var priceline = d3.svg.line()
-    .x(function(d) { return x(d.date); })
-    .y(function(d) { return y(d.price); });
-
-// Adds the svg canvas
-var svg = d3.select("body")
-    .append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-        .attr("transform",
-              "translate(" + margin.left + "," + margin.top + ")");
-
-// Get the data
-d3.csv("stocks_2", function(error, data) {
-    data.forEach(function(d) {
-		d.date = parseDate(d.date);
-		d.price = +d.price;
-    });
-
-    // Scale the range of the data
-    x.domain(d3.extent(data, function(d) { return d.date; }));
-    y.domain([13, d3.max(data, function(d) { return d.price; })]);
-
-    // Nest the entries by symbol
-    var dataNest = d3.nest()
-        .key(function(d) {return d.symbol;})
-        .entries(data);
-
-    var color = d3.scale.category10();   // set the colour scale
-
-    legendSpace = width/dataNest.length; // spacing for the legend
-
-    // Loop through each symbol / key
-    dataNest.forEach(function(d,i) {
-
-        svg.append("path")
-            .attr("class", "line")
-            .style("stroke", function() { // Add the colours dynamically
-                return d.color = color(d.key); })
-            .attr("id", 'tag'+d.key.replace(/\s+/g, '')) // assign ID
-            .attr("d", priceline(d.values));
-
-        // Add the Legend
-        svg.append("text")
-            .attr("x", (legendSpace/2)+legendSpace+350)  // space legend
-            .attr("y", height + (i)*(margin.bottom/2)-150)
-            .attr("class", "legend")    // style the legend
-            .style("fill", function() { // Add the colours dynamically
-                return d.color = color(d.key); })
-            .on("click", function(){
-                // Determine if current line is visible
-                var active   = d.active ? false : true,
-                newOpacity = active ? 0 : 1;
-                // Hide or show the elements based on the ID
-                d3.select("#tag"+d.key.replace(/\s+/g, ''))
-                    .transition().duration(100)
-                    .style("opacity", newOpacity);
-                // Update whether or not the elements are active
-                d.active = active;
-                })
-            .text(d.key);
-
-    });
-
-    // Add the X Axis
-    svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis);
-
-    // Add the Y Axis
-    svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis);
-
-});
-
+function changeText(id){
+ id.innerHTML = "Rejected!";
+}
 </script>
+<p class="error">America's Premier Baja Team</p>
+<p class="error"><a href="https://baja.mae.cornell.edu/about.html">View the team members!</a></p>
+<p class="error"><a href="https://baja.mae.cornell.edu/history.html">View our past results!</a></p>
+<center><div>Who is the REAL Baja Elecronics Sub-Team Lead
+<p class="showclass">Joe Fetter</p></div></center>
+<center><img src="Cornell_Baja_Example_Pic.jpg" alt="Cool Baja Picture" width="500" height="500"> </center>
 </body>
+</html>
